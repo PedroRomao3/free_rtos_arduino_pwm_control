@@ -11,11 +11,15 @@ void sensorTask(void *pvParameters) {
     while (true) {
         lsm.getEvent(&accel, &mag, &gyro, &temp);
 
-        // Send data to control task (e.g., using a queue or global variable)
-
-        filter.update(gyro.gyro.x, gyro.gyro.y, gyro.gyro.z,
-                      accel.acceleration.x, accel.acceleration.y, accel.acceleration.z,
-                      mag.magnetic.x, mag.magnetic.y, mag.magnetic.z);
+        // Protect filter access with mutex
+        if (xSemaphoreTake(filterMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+            filter.update(gyro.gyro.x, gyro.gyro.y, gyro.gyro.z,
+                          accel.acceleration.x, accel.acceleration.y, accel.acceleration.z,
+                          mag.magnetic.x, mag.magnetic.y, mag.magnetic.z);
+            xSemaphoreGive(filterMutex);
+        } else {
+            Serial.println("Sensor task: Failed to acquire filter mutex");
+        }
 
         vTaskDelay(pdMS_TO_TICKS(10)); // Delay for 10 ms
         //print pitch 
