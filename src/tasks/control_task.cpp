@@ -7,10 +7,11 @@
 // P Controller parameters
 float setpoint = - 4.0;    // Target angle (degrees)
 float kp = 1.0;          // Proportional gain - ADD THIS
+float deadband = 5;    // Small deadband to reduce oscillation
 int controlOutput = 0;   // Initialize to middle value
 
 void controlTask(void *pvParameters) {
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for sensor initialization
+    vTaskDelay(pdMS_TO_TICKS(4000)); // Wait for sensor initialization
 
     while (true) {
         float pitch = 0.0;
@@ -25,32 +26,31 @@ void controlTask(void *pvParameters) {
             continue;
         }
 
-        // Serial.print("Pitch: ");
-        // Serial.println(pitch);
-
         float error = setpoint - pitch;
 
         // Protect controlOutput access with mutex
         if (xSemaphoreTake(controlOutputMutex, pdMS_TO_TICKS(1)) == pdTRUE) {
-            // Simple increment/decrement control based on error sign
-            if (error > 0) {
-                controlOutput++;
-                if (controlOutput > 95) {
-                    controlOutput = 95;
-                }
-            } else if (error < 0) {
-                controlOutput--;
-                if (controlOutput < 5) {
-                    controlOutput = 5;
+            // Add deadband to reduce oscillation around setpoint
+            if (abs(error) > deadband) {
+                if (error > 0) {
+                    controlOutput++;
+                    if (controlOutput > 95) {
+                        controlOutput = 95;
+                    }
+                } else {
+                    controlOutput--;
+                    if (controlOutput < 5) {
+                        controlOutput = 5;
+                    }
                 }
             }
-            // If error == 0, do nothing (maintain current output)
+            // If error is within deadband, do nothing
             
             xSemaphoreGive(controlOutputMutex);
         } else {
             Serial.println("Control task: Failed to acquire controlOutput mutex");
         }
 
-        vTaskDelay(pdMS_TO_TICKS(20)); // 10Hz control loop
+        vTaskDelay(pdMS_TO_TICKS(25)); // 10Hz control loop
     }
 }
