@@ -130,18 +130,18 @@ void pwmTask(void *pvParameters) {
 
     rmt_send_servo_pulse(1000);
 
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    vTaskDelay(pdMS_TO_TICKS(3000));
 
     while (true) {
         int localControlOutput = 0;
         
         // Protect controlOutput access with mutex
-        if (xSemaphoreTake(controlOutputMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        if (xSemaphoreTake(controlOutputMutex, pdMS_TO_TICKS(1)) == pdTRUE) {
             localControlOutput = controlOutput;
             xSemaphoreGive(controlOutputMutex);
         } else {
             Serial.println("PWM task: Failed to acquire controlOutput mutex");
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(50));
             continue;
         }
 
@@ -151,7 +151,7 @@ void pwmTask(void *pvParameters) {
         servo_write_pulse_us_scaled(pulse_us);
         
 
-        vTaskDelay(pdMS_TO_TICKS(10)); // Delay for 10 ms (100 Hz)
+        vTaskDelay(pdMS_TO_TICKS(50)); // Delay for 10 ms (100 Hz)
     }
 }
 

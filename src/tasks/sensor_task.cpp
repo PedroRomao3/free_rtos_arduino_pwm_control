@@ -12,7 +12,7 @@ void sensorTask(void *pvParameters) {
         lsm.getEvent(&accel, &mag, &gyro, &temp);
 
         // Protect filter access with mutex
-        if (xSemaphoreTake(filterMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        if (xSemaphoreTake(filterMutex, pdMS_TO_TICKS(1)) == pdTRUE) {
             filter.update(gyro.gyro.x, gyro.gyro.y, gyro.gyro.z,
                           accel.acceleration.x, accel.acceleration.y, accel.acceleration.z,
                           mag.magnetic.x, mag.magnetic.y, mag.magnetic.z);
@@ -23,7 +23,7 @@ void sensorTask(void *pvParameters) {
 
         vTaskDelay(pdMS_TO_TICKS(10)); // Delay for 10 ms
         //print pitch 
-        // Serial.print("Pitch: "); Serial.println(filter.getPitch());
+        //Serial.print("Pitch: "); Serial.println(filter.getPitch());
     }
 }
 
